@@ -1,0 +1,17 @@
+data/
+*.pid
+*.log
+__pycache__/
+tests/__pycache__/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+dist/
+build/

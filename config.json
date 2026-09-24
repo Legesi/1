@@ -1,0 +1,109 @@
+{
+  "system": {
+    "mode": "paper",
+    "initial_equity": 10000.0,
+    "timezone": "Asia/Shanghai"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8765
+  },
+  "binance": {
+    "rest_base": "https://fapi.binance.com",
+    "websocket_base": "wss://fstream.binance.com/market/stream",
+    "request_timeout": 12,
+    "recv_window": 10000
+  },
+  "monitor": {
+    "custom_symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "custom_symbols_enabled": true,
+    "gainers_enabled": true,
+    "losers_enabled": true,
+    "blacklist_symbols": [],
+    "gainers_top_n": 20,
+    "losers_top_n": 10,
+    "min_change_percent": 5.0,
+    "max_change_percent": 100.0,
+    "min_quote_volume": 10000000.0,
+    "min_volume": 0.0,
+    "min_price": 0.0,
+    "max_price": 1000000000.0,
+    "gainers_refresh_interval": 30,
+    "strategy_scan_interval": 30
+  },
+  "strategy": {
+    "default": "default_trend_v1",
+    "min_volume_ratio": 1.2,
+    "min_rr": 1.8,
+    "min_confidence": 60,
+    "timeframes": {
+      "trend": "4h",
+      "main": "1h",
+      "setup": "15m",
+      "confirmation": "5m",
+      "entry": "1m"
+    },
+    "trigger": {
+      "mode": "event_driven",
+      "confirmation_events": [
+        "KLINE_CLOSED",
+        "PRICE_BREAKOUT",
+        "PRICE_BREAKDOWN",
+        "VOLUME_SPIKE",
+        "NEW_GAINER",
+        "NEW_LOSER",
+        "MARKET_REGIME_CHANGED",
+        "SETUP_FORMED"
+      ]
+    },
+    "ai_cooldown_seconds": 900
+  },
+  "risk": {
+    "risk_per_trade": 0.005,
+    "max_daily_loss": 0.02,
+    "max_positions": 5,
+    "max_consecutive_losses": 3,
+    "max_total_exposure": 0.5,
+    "max_slippage": 0.002,
+    "kill_switch": false,
+    "max_loss_usdt": 50,
+    "max_loss_percent_of_equity": 0.02,
+    "over_risk_behavior": "AUTO_RESIZE",
+    "stop_loss_mode": "ATR",
+    "max_spread_percent": 0.01,
+    "emergency_move_percent": 0.15
+  },
+  "execution": {
+    "paper_fill_price": "market",
+    "enable_live_orders": false,
+    "fee_rate": 0.0004,
+    "paper_slippage": 0.0002,
+    "partial_take_profit": {
+      "tp1_percent": 0.3,
+      "tp2_percent": 0.3,
+      "tp3_percent": 0.4
+    },
+    "trailing_stop": {
+      "enabled": true,
+      "type": "ATR",
+      "distance_r": 1.0
+    }
+  },
+  "backtest": {
+    "initial_capital": 10000.0,
+    "fee_rate": 0.0004,
+    "slippage": 0.0002,
+    "max_holding_bars": 48,
+    "warmup_bars": 60
+  },
+  "notifications": {
+    "in_app": true,
+    "outbound_enabled": false,
+    "telegram_token_env": "OPENCLAW_QUANT_TELEGRAM_TOKEN",
+    "telegram_chat_id_env": "OPENCLAW_QUANT_TELEGRAM_CHAT_ID",
+    "discord_webhook_env": "OPENCLAW_QUANT_DISCORD_WEBHOOK"
+  }
+}

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenClaw Quant</title>
+  <style>
+    :root { color-scheme:dark; font-family:Inter,"Segoe UI",sans-serif; background:#0d1117; color:#dbe4ee; }
+    body { margin:0; background:#0d1117; }
+    header { padding:18px 32px; border-bottom:1px solid #273244; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    h1 { margin:0; font-size:22px; letter-spacing:0; }
+    .header-actions { display:flex; align-items:center; gap:12px; }
+    .language-control { display:flex; align-items:center; gap:8px; color:#9bb0c7; font-size:13px; }
+    .pill { padding:6px 10px; border:1px solid #2b8a62; color:#78e2ae; border-radius:999px; font-size:12px; }
+    main { max-width:1400px; margin:0 auto; padding:24px 32px; }
+    .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin-bottom:18px; }
+    section { border:1px solid #273244; background:#121923; padding:16px; border-radius:8px; }
+    h2 { margin:0 0 14px; font-size:15px; color:#9bb0c7; }
+    .metric { font-size:25px; font-variant-numeric:tabular-nums; }
+    .muted { color:#9aa9ba; font-size:12px; line-height:1.55; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; padding:8px; border-bottom:1px solid #273244; }
+    th { color:#9aa9ba; font-weight:500; }
+    input,button,select { background:#0d1117; border:1px solid #3a4b62; color:#dbe4ee; padding:8px 10px; border-radius:5px; font:inherit; }
+    button { cursor:pointer; }
+    button:hover,select:hover { border-color:#77a9d8; }
+    input { min-width:150px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    .ok { color:#78e2ae; }
+    .warn { color:#ffc56e; }
+    .bad { color:#ff8f8f; }
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+    @media (max-width:640px) {
+      header { padding:16px; align-items:flex-start; }
+      h1 { font-size:18px; }
+      .header-actions { flex-wrap:wrap; justify-content:flex-end; }
+      main { padding:16px; }
+      section { overflow-x:auto; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1 data-i18n="title">OpenClaw Quant Trading System</h1>
+  <div class="header-actions">
+    <label class="language-control" for="language"><span data-i18n="language">Language</span>
+      <select id="language" aria-label="Language">
+        <option value="en">English</option>
+        <option value="zh-CN">简体中文</option>
+      </select>
+    </label>
+    <span class="pill" id="mode">PAPER</span>
+  </div>
+</header>
+<main>
+  <div class="grid" id="metrics"></div>
+  <section>
+    <h2 data-i18n="monitorPool">Monitor Pool</h2>
+    <div class="row">
+      <input id="symbol" placeholder="e.g. BTCUSDT" data-i18n-placeholder="symbolPlaceholder" />
+      <button onclick="addSymbol()" data-i18n="add">Add</button>
+      <button onclick="refreshMarket()" data-i18n="refreshMarket">Refresh Market</button>
+      <button onclick="runScan()" data-i18n="diagnosticScan">Diagnostic Scan</button>
+    </div>
+    <p class="muted" id="poolMeta"></p>
+    <div id="pool"></div>
+  </section>
+  <div class="grid" style="margin-top:18px">
+    <section><h2 data-i18n="gainers">Gainers</h2><div id="gainers"></div></section>
+    <section><h2 data-i18n="losers">Losers</h2><div id="losers"></div></section>
+  </div>
+  <section><h2 data-i18n="signals">Signals / Trading Opportunities</h2><div id="signals"></div></section>
+  <div class="grid" style="margin-top:18px">
+    <section><h2 data-i18n="openPositions">Open Positions</h2><div id="positions"></div><button onclick="reconcile()" data-i18n="reconcile">Reconcile</button></section>
+    <section>
+      <h2 data-i18n="riskControl">Risk Control</h2>
+      <p class="muted" data-i18n="riskDescription">Emergency stop pauses new Paper entries and is persisted in the audit log.</p>
+      <div class="row"><button onclick="killSwitch(true)" data-i18n="enableKillSwitch">Enable Kill Switch</button><button onclick="killSwitch(false)" data-i18n="disableKillSwitch">Disable Kill Switch</button><button onclick="runAgentMonitor()" data-i18n="runAgentMonitor">Run Agent Monitor</button></div>
+    </section>
+  </div>
+  <section style="margin-top:18px">
+    <h2 data-i18n="strategies">Strategy Versions & Bindings</h2>
+    <div id="strategies"></div>
+    <div class="row" style="margin-top:12px">
+      <input id="strategyJson" style="min-width:min(70%, 760px)" value='{"name":"Momentum Breakout","version":"1.0","description":"5m breakout with volume confirmation","direction":"LONG","conditions":{"logic":"AND","conditions":[{"indicator":"PRICE","operator":">","compare_to":"EMA20"},{"indicator":"VOLUME_RATIO","operator":">=","value":1.5}]},"risk":{"min_rr":2,"risk_per_trade":0.005,"stop_atr":1.5,"tp1_r":1,"tp2_r":2,"tp3_r":3},"timeframes":{"trend":"1h","main":"15m","setup":"5m","confirmation":"1m","entry":"1m"},"enabled":true}' />
+      <button onclick="createStrategy()" data-i18n="createVersion">Create Version</button>
+    </div>
+  </section>
+  <section style="margin-top:18px">
+    <h2 data-i18n="strategyPreview">OpenClaw Strategy Preview</h2>
+    <div class="row"><input id="naturalStrategy" style="min-width:min(70%, 760px)" data-i18n-placeholder="strategyPlaceholder" /><button onclick="previewStrategy()" data-i18n="generatePreview">Generate Preview</button></div>
+    <pre id="strategyPreview" class="muted"></pre>
+  </section>
+  <section style="margin-top:18px"><h2 data-i18n="eventReports">Event & Agent Reports</h2><div id="agents"></div></section>
+</main>
+<script>
+const messages = {
+  en: {
+    title:'OpenClaw Quant Trading System', language:'Language', equity:'Equity', positionsMetric:'Positions', monitors:'Monitors', websocket:'WebSocket', connected:'CONNECTED', fallback:'FALLBACK',
+    monitorPool:'Monitor Pool', symbolPlaceholder:'e.g. BTCUSDT', add:'Add', refreshMarket:'Refresh Market', diagnosticScan:'Diagnostic Scan',
+    eventDrivenHint:'Strategy events are triggered by closed candles, breakouts, volume spikes, and ranking changes. Diagnostic scans do not change the event-driven mode.',
+    finalPool:'Final monitor pool', lastRefresh:'Last refresh', notYet:'not yet', gainers:'Gainers', losers:'Losers', signals:'Signals / Trading Opportunities', openPositions:'Open Positions', reconcile:'Reconcile',
+    riskControl:'Risk Control', riskDescription:'Emergency stop pauses new Paper entries and is persisted in the audit log.', enableKillSwitch:'Enable Kill Switch', disableKillSwitch:'Disable Kill Switch', runAgentMonitor:'Run Agent Monitor',
+    strategies:'Strategy Versions & Bindings', createVersion:'Create Version', strategyPreview:'OpenClaw Strategy Preview', strategyPlaceholder:'Create a 5-minute breakout strategy; use 1-hour trend, volume above 1.5x average, minimum R/R 2.', generatePreview:'Generate Preview', eventReports:'Event & Agent Reports',
+    noData:'No data yet', symbol:'Symbol', source:'Source', state:'State', change24h:'24H change', price:'Price', quoteVolume:'Quote volume', direction:'Direction', strategy:'Strategy', confidence:'Confidence', riskReward:'R/R', status:'Status', quantity:'Qty', entry:'Entry', stopLoss:'Stop loss', takeProfit:'TP1', name:'Name', version:'Version', enabled:'Enabled', created:'Created', bindings:'Bindings',
+    on:'ON', paused:'PAUSED', custom:'CUSTOM', marketGainers:'GAINERS', marketLosers:'LOSERS', long:'LONG', short:'SHORT', pending:'PENDING', open:'OPEN', closed:'CLOSED', yes:'YES', no:'NO',
+    actionFailed:'The action could not be completed.'
+  },
+  'zh-CN': {
+    title:'OpenClaw 量化交易系统', language:'语言', equity:'账户权益', positionsMetric:'持仓数量', monitors:'监控币种', websocket:'WebSocket', connected:'已连接', fallback:'未连接',
+    monitorPool:'监控池', symbolPlaceholder:'例如 BTCUSDT', add:'添加', refreshMarket:'刷新行情', diagnosticScan:'诊断扫描',
+    eventDrivenHint:'策略由 K 线收盘、突破、放量和排名变化等事件触发。诊断扫描不会改变事件驱动模式。',
+    finalPool:'最终监控池', lastRefresh:'上次刷新', notYet:'尚未刷新', gainers:'涨幅榜', losers:'跌幅榜', signals:'信号 / 交易机会', openPositions:'当前持仓', reconcile:'执行对账',
+    riskControl:'风险控制', riskDescription:'紧急停止会暂停新的 Paper 入场，并写入审计日志。', enableKillSwitch:'启用紧急停止', disableKillSwitch:'解除紧急停止', runAgentMonitor:'运行智能体监控',
+    strategies:'策略版本与绑定', createVersion:'创建版本', strategyPreview:'OpenClaw 策略预览', strategyPlaceholder:'创建 5 分钟突破策略；使用 1 小时趋势，成交量高于均量 1.5 倍，最低盈亏比 2。', generatePreview:'生成预览', eventReports:'事件与智能体报告',
+    noData:'暂无数据', symbol:'交易对', source:'来源', state:'状态', change24h:'24 小时涨跌', price:'价格', quoteVolume:'成交额', direction:'方向', strategy:'策略', confidence:'置信度', riskReward:'盈亏比', status:'状态', quantity:'数量', entry:'入场价', stopLoss:'止损价', takeProfit:'止盈价 TP1', name:'名称', version:'版本', enabled:'已启用', created:'创建时间', bindings:'策略绑定',
+    on:'运行中', paused:'已暂停', custom:'自选', marketGainers:'涨幅榜', marketLosers:'跌幅榜', long:'做多', short:'做空', pending:'待处理', open:'持仓中', closed:'已平仓', yes:'是', no:'否',
+    actionFailed:'操作未能完成。'
+  }
+};
+let language = ['en','zh-CN'].includes(localStorage.getItem('openclaw-quant-language')) ? localStorage.getItem('openclaw-quant-language') : 'en';
+const t = key => messages[language][key] ?? messages.en[key] ?? key;
+const get = path => fetch(path).then(r => r.json());
+const post = (path, body) => fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).then(r => r.json());
+const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function display(value) {
+  const key = ({ON:'on',PAUSED:'paused',CUSTOM:'custom',GAINERS:'marketGainers',LOSERS:'marketLosers',LONG:'long',SHORT:'short',PENDING:'pending',OPEN:'open',CLOSED:'closed',true:'yes',false:'no'})[value];
+  return key ? t(key) : value;
+}
+function table(items, cols) {
+  if (!items?.length) return '<span class="muted">'+esc(t('noData'))+'</span>';
+  return '<table><thead><tr>'+cols.map(c=>'<th>'+esc(t(c[1]))+'</th>').join('')+'</tr></thead><tbody>'+items.map(x=>'<tr>'+cols.map(c=>'<td>'+esc(typeof c[0]==='function'?c[0](x):display(x[c[0]]))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+function applyLanguage() {
+  document.documentElement.lang = language;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.getElementById('language').value = language;
+}
+async function refresh() {
+  const [s,p,g,l,signals,positions,strategies,agents] = await Promise.all([get('/api/status'),get('/api/monitor/pool'),get('/api/gainers'),get('/api/losers'),get('/api/signals'),get('/api/positions'),get('/api/strategies'),get('/api/agents/reports')]);
+  document.getElementById('mode').textContent = s.mode.toUpperCase();
+  const equity = Number(s.equity);
+  const connected = Boolean(s.websocket.connected);
+  document.getElementById('metrics').innerHTML = [[t('equity'),Number.isFinite(equity)?equity.toFixed(2)+' USDT':'—',''],[t('positionsMetric'),s.position_count,''],[t('monitors'),s.monitor_count,''],[t('websocket'),connected?t('connected'):t('fallback'),connected?'ok':'warn']].map(x=>'<section><h2>'+esc(x[0])+'</h2><div class="metric '+x[2]+'">'+esc(x[1])+'</div></section>').join('');
+  document.getElementById('poolMeta').textContent = t('eventDrivenHint')+' '+t('finalPool')+': '+(p.final_symbols||[]).join(', ')+' | '+t('lastRefresh')+': '+(p.last_refresh||t('notYet'));
+  document.getElementById('pool').innerHTML = table(p.custom,[['symbol','symbol'],['source','source'],[x=>display(x.enabled?'ON':'PAUSED'),'state']]);
+  document.getElementById('gainers').innerHTML = table(g,[['symbol','symbol'],[x=>(+x.change_percent).toFixed(2)+'%','change24h'],['last_price','price'],['quote_volume','quoteVolume']]);
+  document.getElementById('losers').innerHTML = table(l,[['symbol','symbol'],[x=>(+x.change_percent).toFixed(2)+'%','change24h'],['last_price','price']]);
+  document.getElementById('signals').innerHTML = table(signals,[['symbol','symbol'],['direction','direction'],['strategy','strategy'],['confidence','confidence'],['risk_reward','riskReward'],['status','status']]);
+  document.getElementById('positions').innerHTML = table(positions,[['symbol','symbol'],['direction','direction'],['quantity','quantity'],['entry_price','entry'],['stop_loss','stopLoss'],['take_profit','takeProfit']]);
+  document.getElementById('strategies').innerHTML = table(strategies.strategies,[['name','name'],['version','version'],['enabled','enabled'],['created_at','created']])+'<p class="muted">'+esc(t('bindings'))+': '+esc(JSON.stringify(strategies.bindings))+'</p>';
+  document.getElementById('agents').innerHTML = table(agents,[['agent','name'],['report_type','status'],['created_at','created']]);
+}
+async function addSymbol(){ const symbol=document.getElementById('symbol').value.trim(); if(symbol){ const result=await post('/api/monitor/custom',{action:'add',symbol}); if(result.error) alert(result.error); } document.getElementById('symbol').value=''; refresh(); }
+async function refreshMarket(){ const result=await post('/api/market/refresh',{}); if(result.error) alert(result.error); refresh(); }
+async function runScan(){ const result=await post('/api/scan',{}); if(result.error) alert(result.error); refresh(); }
+async function killSwitch(enabled){ const result=await post('/api/risk/kill-switch',{enabled}); if(result.error) alert(result.error||t('actionFailed')); refresh(); }
+async function reconcile(){ alert(JSON.stringify(await post('/api/positions/reconcile',{}),null,2)); refresh(); }
+async function runAgentMonitor(){ alert(JSON.stringify(await post('/api/agents/monitor',{}),null,2)); refresh(); }
+async function createStrategy(){ try { const payload=JSON.parse(document.getElementById('strategyJson').value); const response=await post('/api/strategies',{payload}); if(response.error) alert(response.error); refresh(); } catch(e){ alert(e.message); } }
+async function previewStrategy(){ const text=document.getElementById('naturalStrategy').value; const response=await post('/api/strategies/parse',{text}); document.getElementById('strategyPreview').textContent=JSON.stringify(response,null,2); }
+document.getElementById('language').addEventListener('change', event => { language=event.target.value; localStorage.setItem('openclaw-quant-language',language); applyLanguage(); refresh(); });
+applyLanguage();
+refresh();
+setInterval(refresh,5000);
+</script>
+</body>
+</html>
